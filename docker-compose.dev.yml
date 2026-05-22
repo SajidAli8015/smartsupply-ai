@@ -1,0 +1,23 @@
+version: '3.9'
+
+# Local development — only the database runs in Docker.
+# Backend and frontend are run natively (see README.md).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartsupply
+      POSTGRES_PASSWORD: smartsupply123
+      POSTGRES_DB: smartsupply_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U smartsupply -d smartsupply_db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
