@@ -27,11 +27,13 @@ def create_app() -> FastAPI:
             content={"status": "ok", "app": "SmartSupply AI"},
         )
 
-    from routers import health, auth, products, inventory
+    from routers import health, auth, products, inventory, factories, purchase_orders
     app.include_router(health.router, prefix=settings.API_V1_STR)
     app.include_router(auth.router, prefix=settings.API_V1_STR)
     app.include_router(products.router, prefix=settings.API_V1_STR)
     app.include_router(inventory.router, prefix=settings.API_V1_STR)
+    app.include_router(factories.router, prefix=settings.API_V1_STR)
+    app.include_router(purchase_orders.router, prefix=settings.API_V1_STR)
 
     return app
 
