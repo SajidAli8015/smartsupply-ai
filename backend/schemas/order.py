@@ -79,6 +79,7 @@ class OrderResponse(BaseModel):
 class FulfillmentOrderResponse(BaseModel):
     id: int
     buyer_id: int
+    buyer: Optional[BuyerBrief] = None
     status: OrderStatus
     total_amount: Decimal
     shipping_address: Optional[Dict[str, Any]] = None
