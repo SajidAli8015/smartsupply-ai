@@ -14,7 +14,7 @@ from core.security import (
     verify_token,
 )
 from db.session import get_db
-from models.user import User, UserRole
+from models.user import User
 from schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -24,7 +24,7 @@ _REFRESH_COOKIE = "refresh_token"
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_200_OK)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    """Create a buyer account and return an access token."""
+    """Create a user account and return an access token."""
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -34,7 +34,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
-        role=UserRole.buyer,
+        role=payload.role,
         is_active=True,
     )
     db.add(user)

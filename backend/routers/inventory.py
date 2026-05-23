@@ -17,7 +17,7 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 @router.get("", response_model=PagedResponse[InventoryResponse])
 def list_inventory(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=500),
     db: Session = Depends(get_db),
     _: User = Depends(require_staff_or_supplier),
 ) -> PagedResponse[InventoryResponse]:
