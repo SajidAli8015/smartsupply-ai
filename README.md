@@ -33,27 +33,11 @@ The technical foundation is a FastAPI backend with a service-layer architecture,
 
 ## Screenshots
 
-> Run the [local development setup](#local-development) or `docker-compose up` to see the full application in action.
-
 <br/>
 
 **Supplier Dashboard** — Live KPIs, revenue time-series chart, top products by revenue, and purchase order pipeline
 ![Supplier Dashboard](docs/screenshots/dashboard.png)
 
-**Orders Management** — Full order lifecycle with status tracking, detail slide-over, and one-click status transitions
-![Orders Management](docs/screenshots/orders.png)
-
-**Fulfillment Queue** — Warehouse staff view with To Pack / To Ship columns, priority flagging, and ship modal
-![Fulfillment Queue](docs/screenshots/fulfillment.png)
-
-**Purchase Orders** — Factory procurement management with line items, status tracking, and delivery timelines
-![Purchase Orders](docs/screenshots/purchase-orders.png)
-
-**Buyer Storefront** — Product browsing with filters, SKU-level color/size selection, and persistent cart sidebar
-![Buyer Storefront](docs/screenshots/shop.png)
-
-**My Orders** — Buyer order tracking with expandable cards, shipping address, courier tracking numbers, and cancel option
-![My Orders](docs/screenshots/my-orders.png)
 
 ---
 
