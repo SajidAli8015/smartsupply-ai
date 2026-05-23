@@ -27,7 +27,7 @@ def _load_po(db: Session, po_id: int) -> PurchaseOrder:
         db.query(PurchaseOrder)
         .options(
             joinedload(PurchaseOrder.factory),
-            joinedload(PurchaseOrder.line_items),
+            joinedload(PurchaseOrder.line_items).joinedload(POLineItem.sku),
         )
         .filter(PurchaseOrder.id == po_id)
         .first()
@@ -53,7 +53,7 @@ def get_purchase_orders(
         .filter(*filters)
         .options(
             joinedload(PurchaseOrder.factory),
-            joinedload(PurchaseOrder.line_items),
+            joinedload(PurchaseOrder.line_items).joinedload(POLineItem.sku),
         )
         .order_by(PurchaseOrder.created_at.desc())
         .offset((page - 1) * page_size)

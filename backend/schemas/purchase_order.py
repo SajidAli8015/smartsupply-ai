@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from models.purchase_order import POStatus
 
@@ -24,11 +24,27 @@ class POLineItemCreate(BaseModel):
 class POLineItemResponse(BaseModel):
     id: int
     sku_id: int
+    sku_code: str = ""
     quantity_ordered: int
     quantity_received: int
     unit_cost: Decimal
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_sku_code(cls, data: Any) -> Any:
+        # When constructed from an ORM POLineItem, pull sku_code from the relationship
+        if hasattr(data, "sku") and data.sku is not None:
+            return {
+                "id": data.id,
+                "sku_id": data.sku_id,
+                "sku_code": data.sku.sku_code,
+                "quantity_ordered": data.quantity_ordered,
+                "quantity_received": data.quantity_received,
+                "unit_cost": data.unit_cost,
+            }
+        return data
 
 
 class PurchaseOrderCreate(BaseModel):
