@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # Redis is optional — background tasks are disabled when not set.
     REDIS_URL: Optional[str] = None
 
+    GEMINI_API_KEY: str = ""
+
     STRIPE_SECRET_KEY: str = ""
     SENDGRID_API_KEY: str = ""
 

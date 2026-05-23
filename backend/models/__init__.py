@@ -9,6 +9,7 @@ from models.product import Product, ProductType, SKU
 from models.purchase_order import POLineItem, POStatus, PurchaseOrder
 from models.shipment import Shipment
 from models.user import User, UserRole
+from models.chat import ChatSession, ChatMessage, ChatRole
 
 __all__ = [
     # Users
@@ -34,4 +35,8 @@ __all__ = [
     "Shipment",
     # Notifications
     "Notification",
+    # AI Chat
+    "ChatSession",
+    "ChatMessage",
+    "ChatRole",
 ]

@@ -2,7 +2,7 @@
 
 # SmartSupply AI
 
-### AI-powered supply chain and order management platform for apparel businesses — with RAG-based business intelligence assistant *(coming soon)*
+### AI-powered supply chain and order management platform for apparel businesses — with Gemini-powered Text-to-SQL business intelligence assistant
 
 <br/>
 
@@ -23,7 +23,7 @@
 
 SmartSupply AI is a full-stack, production-ready supply chain management platform built specifically for apparel businesses. It covers the complete business cycle — from factory procurement and inventory management, through to customer orders, warehouse fulfillment, and delivery — in a single cohesive system. The platform is designed for small-to-medium apparel suppliers who need real operational visibility without the cost or complexity of enterprise ERP software.
 
-The platform is architected with an AI layer in mind. The upcoming RAG-based business intelligence assistant will give suppliers natural-language visibility into their operations: *"Which products should I reorder?"*, *"What's my best-performing SKU this month?"*, *"Which orders have been sitting in fulfillment for over 48 hours?"*. By structuring analytics data as rich, queryable context, SmartSupply AI is purpose-built to connect operations data to an LLM — turning a supply chain dashboard into an intelligent business advisor.
+The platform includes a fully functional AI business intelligence assistant powered by Google Gemini. It uses a Text-to-SQL approach — converting natural language questions into PostgreSQL queries, executing them against live business data, and returning plain English insights. The assistant supports multi-turn conversations with memory, so follow-up questions like *"How can I reorder it?"* understand the previous context automatically. Every response shows the generated SQL query and raw data for full transparency.
 
 SmartSupply AI serves three personas: **suppliers** (owners and managers who need business KPIs, purchase order management, and full order visibility), **warehouse staff** (who need a clean, focused queue for packing and shipping), and **buyers** (retail customers who browse products, place orders, and track deliveries). Role-based access control ensures each user sees only what is relevant to their workflow, with separate layouts, navigation, and API guards per role.
 
@@ -41,6 +41,43 @@ The technical foundation is a FastAPI backend with a service-layer architecture,
 
 ---
 
+## AI Business Intelligence Assistant
+
+SmartSupply AI includes a fully functional AI assistant that gives suppliers natural language access to their business data.
+
+### How it works
+
+1. Supplier asks a question in plain English
+2. Gemini generates a PostgreSQL `SELECT` query based on the question and the full database schema
+3. Query executes against live business data (read-only, safety validated — only `SELECT`/`WITH` allowed)
+4. Results are injected back into Gemini as context for a second turn
+5. Gemini returns a plain English business insight formatted for a business analyst
+6. Full conversation history (last 10 messages) is sent with every request for multi-turn continuity
+
+### Example conversations
+
+| Question | What the AI does |
+|---|---|
+| *"Which products should I reorder this week?"* | Queries inventory against low-stock thresholds, returns SKUs with exact quantities needed |
+| *"How can I reorder it?"* | Remembers the context — explains PO creation steps with the relevant SKU codes |
+| *"What was my revenue this month?"* | Queries the orders table, aggregates `total_amount` for confirmed/delivered orders, returns PKR totals |
+| *"Which orders are still unshipped?"* | Lists orders with `shipped` status pending, including buyer names and order ages |
+| *"Who are my top customers?"* | Ranks buyers by total spend with order counts |
+
+### Technical implementation
+
+| Aspect | Detail |
+|---|---|
+| **LLM** | Google Gemini 2.5 Flash |
+| **Approach** | Text-to-SQL (structured data — no vector embeddings needed) |
+| **Memory** | Last 10 messages sent with every request for conversation continuity |
+| **Safety** | SQL validated before execution — only `SELECT`/`WITH` allowed; forbidden keywords blocked |
+| **Row cap** | Queries automatically capped at 100 rows to prevent accidental full-table scans |
+| **Storage** | Chat sessions and messages persisted in PostgreSQL (`chat_sessions`, `chat_messages`) |
+| **Access** | Supplier role only — protected at both the FastAPI dependency and React route levels |
+
+---
+
 ## Features
 
 ### Supplier / Owner
@@ -53,6 +90,13 @@ The technical foundation is a FastAPI backend with a service-layer architecture,
 - **Full order visibility** — view every buyer order with status history, item breakdown, shipping address, and shipment tracking numbers
 - **Order lifecycle management** — confirm pending orders and mark shipped orders as delivered directly from the order detail view
 - **Notifications system** — in-app notification feed for restocks, order events, and business alerts
+- **AI business intelligence assistant** — natural language queries powered by Google Gemini; ask questions, get answers backed by live database data
+- **Text-to-SQL engine** — plain English questions are converted to PostgreSQL queries and executed against live data in real time
+- **Multi-turn conversation memory** — follow-up questions understand previous context; last 10 messages sent with every request
+- **Transparent AI responses** — every answer shows the generated SQL query and raw result data in collapsible panels
+- **Suggested questions and quick actions** — pre-built prompts for reorder suggestions, slow-mover analysis, and revenue summaries
+- **Full chat history with session management** — conversations persisted in PostgreSQL, accessible from a left-panel session list
+- **Business snapshot panel** — live KPIs (today's orders, low-stock count, active POs) displayed alongside every chat
 
 ### Warehouse Staff
 
@@ -87,7 +131,7 @@ The technical foundation is a FastAPI backend with a service-layer architecture,
 | **Infrastructure** | Docker, Docker Compose, GitHub Actions CI/CD |
 | **Cloud Ready** | AWS ECS, RDS, S3, CloudFront *(deployment guide coming)* |
 | **Payments** | Stripe SDK *(test mode integration)* |
-| **AI (Planned)** | RAG pipeline with LLM integration for natural language business intelligence |
+| **AI / LLM** | Google Gemini 2.5 Flash, Text-to-SQL, Multi-turn conversation memory |
 
 ---
 
@@ -109,88 +153,119 @@ The **React frontend** separates server state from UI state cleanly. **React Que
 
 ```
 smartsupply-ai/
-├── backend/
-│   ├── alembic/              # Database migrations (versioned schema history)
-│   ├── core/
-│   │   ├── config.py         # Pydantic settings loaded from .env
-│   │   ├── dependencies.py   # FastAPI auth dependencies per role
-│   │   ├── security.py       # JWT encode/decode, password hashing
-│   │   └── cache.py          # Redis client and cache helpers
-│   ├── db/
-│   │   └── session.py        # SQLAlchemy engine and SessionLocal
-│   ├── models/               # SQLAlchemy ORM models
-│   │   ├── user.py           #   User (supplier / staff / buyer)
-│   │   ├── product.py        #   Product, SKU
-│   │   ├── inventory.py      #   Inventory (per-SKU stock levels)
-│   │   ├── order.py          #   Order, OrderItem, OrderStatus enum
-│   │   ├── shipment.py       #   Shipment (carrier + tracking number)
-│   │   ├── factory.py        #   Factory vendor
-│   │   ├── purchase_order.py #   PurchaseOrder, POLineItem
-│   │   └── notification.py   #   Notification
-│   ├── routers/              # FastAPI APIRouters — one file per domain
-│   │   ├── auth.py           #   POST /auth/login, /auth/refresh, /auth/logout
-│   │   ├── products.py       #   GET /products (paginated, filterable)
-│   │   ├── orders.py         #   /orders — buyer + supplier views, status updates
-│   │   ├── inventory.py      #   /inventory
-│   │   ├── factories.py      #   /factories
-│   │   ├── purchase_orders.py#   /purchase-orders
-│   │   ├── analytics.py      #   /analytics — KPIs, revenue charts, top products
-│   │   ├── notifications.py  #   /notifications
-│   │   └── health.py         #   /health — liveness probe for load balancers
-│   ├── schemas/              # Pydantic v2 request/response models
-│   ├── services/             # Business logic layer (no HTTP concerns here)
-│   │   ├── order_service.py
-│   │   ├── product_service.py
-│   │   ├── inventory_service.py
-│   │   ├── factory_service.py
-│   │   └── po_service.py
-│   ├── scripts/
-│   │   └── seed.py           # Idempotent seed with realistic apparel data
-│   ├── tests/                # Pytest test suite
-│   ├── main.py               # FastAPI app factory, CORS, router registration
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   └── src/
-│       ├── api/              # Typed Axios wrappers — one file per domain
-│       │   ├── client.ts     #   Axios instance with JWT interceptor + auto-refresh
-│       │   ├── buyer.ts      #   Buyer-specific endpoints (shop, cart, orders)
-│       │   ├── orders.ts     #   Supplier order management + fulfillment queue
-│       │   ├── products.ts   #   Product and inventory management
-│       │   ├── factories.ts  #   Factory vendor CRUD
-│       │   ├── purchase_orders.ts
-│       │   └── analytics.ts  #   KPI and chart data
-│       ├── components/
-│       │   ├── buyer/        #   CartSidebar
-│       │   ├── dashboard/    #   KPICard, SalesChart, TopProductsTable,
-│       │   │                 #   LowStockAlert, POPipeline
-│       │   └── ProtectedRoute.tsx
-│       ├── contexts/
-│       │   ├── AuthContext.tsx    # JWT auth state, login / logout
-│       │   ├── CartContext.tsx    # Cart with localStorage persistence
-│       │   └── ToastContext.tsx   # Global toast notification system
-│       ├── layouts/
-│       │   ├── SupplierLayout.tsx # Sidebar nav for supplier / staff
-│       │   └── BuyerLayout.tsx    # Top nav with cart badge + CartSidebar
-│       ├── lib/
-│       │   └── format.ts     # formatPKR, timeAgo, ORDER_STATUS_STYLES
-│       ├── pages/
-│       │   ├── auth/         #   Login, Register
-│       │   ├── supplier/     #   Dashboard, Orders, Fulfillment, Inventory,
-│       │   │                 #   Products, Factories, PurchaseOrders
-│       │   └── buyer/        #   Shop, ProductDetail, Checkout,
-│       │                     #   OrderConfirmation, MyOrders
-│       └── types/
-│           └── index.ts      # Shared TypeScript interfaces
-├── infra/                    # AWS Terraform configuration (coming soon)
-├── docs/
-│   └── screenshots/          # README screenshots
 ├── .github/
 │   └── workflows/
-│       └── ci.yml            # Backend pytest + frontend build on every push
-├── docker-compose.yml        # Full stack: postgres + redis + backend + frontend
-├── docker-compose.dev.yml    # Dev mode: postgres only (run backend/frontend natively)
-└── .env.example              # Environment variable template
+│       └── ci.yml                    # GitHub Actions CI/CD pipeline
+├── backend/
+│   ├── alembic/                      # Database migrations
+│   │   └── versions/                 # Migration files
+│   ├── core/
+│   │   ├── config.py                 # App settings from .env
+│   │   ├── dependencies.py           # FastAPI role-based dependencies
+│   │   └── security.py               # JWT and password hashing
+│   ├── db/
+│   │   ├── base.py                   # SQLAlchemy declarative base
+│   │   └── session.py                # Database engine and get_db
+│   ├── models/
+│   │   ├── user.py                   # User model (supplier/staff/buyer)
+│   │   ├── product.py                # Product and SKU models
+│   │   ├── inventory.py              # Inventory model
+│   │   ├── factory.py                # Factory/vendor model
+│   │   ├── purchase_order.py         # PO and PO line items
+│   │   ├── order.py                  # Order, order items, shipment
+│   │   ├── notification.py           # Notifications model
+│   │   └── chat.py                   # AI chat sessions and messages
+│   ├── routers/
+│   │   ├── auth.py                   # Login, register, refresh, logout
+│   │   ├── products.py               # Product and SKU endpoints
+│   │   ├── inventory.py              # Inventory and stock adjustment
+│   │   ├── factories.py              # Factory CRUD
+│   │   ├── purchase_orders.py        # PO management and receiving
+│   │   ├── orders.py                 # Order lifecycle management
+│   │   ├── analytics.py              # Dashboard KPIs and charts data
+│   │   ├── notifications.py          # Notification endpoints
+│   │   └── ai.py                     # AI chat sessions and messages
+│   ├── schemas/
+│   │   ├── auth.py                   # Login/register request/response
+│   │   ├── product.py                # Product and SKU schemas
+│   │   ├── inventory.py              # Inventory schemas
+│   │   ├── factory.py                # Factory schemas
+│   │   ├── purchase_order.py         # PO schemas
+│   │   ├── order.py                  # Order schemas
+│   │   └── notification.py           # Notification schemas
+│   ├── services/
+│   │   ├── product_service.py        # Product business logic
+│   │   ├── inventory_service.py      # Inventory business logic
+│   │   ├── factory_service.py        # Factory business logic
+│   │   ├── po_service.py             # Purchase order business logic
+│   │   ├── order_service.py          # Order and fulfillment logic
+│   │   ├── notification_service.py   # Notification creation
+│   │   └── ai_service.py             # Gemini AI, text-to-SQL, chat memory
+│   ├── scripts/
+│   │   └── seed.py                   # Realistic Pakistani apparel seed data
+│   ├── tests/
+│   │   ├── test_health.py            # Health check smoke test
+│   │   ├── test_auth.py              # Auth endpoint tests
+│   │   └── test_products.py          # Products and inventory tests
+│   ├── main.py                       # FastAPI app factory
+│   ├── alembic.ini                   # Alembic configuration
+│   └── requirements.txt              # Python dependencies
+├── frontend/
+│   └── src/
+│       ├── api/
+│       │   ├── client.ts             # Axios instance with auth interceptor
+│       │   ├── analytics.ts          # Analytics and KPI API calls
+│       │   ├── products.ts           # Products and inventory API calls
+│       │   ├── factories.ts          # Factories API calls
+│       │   ├── purchase_orders.ts    # Purchase orders API calls
+│       │   ├── orders.ts             # Orders API calls
+│       │   ├── buyer.ts              # Buyer storefront API calls
+│       │   └── ai.ts                 # AI assistant API calls
+│       ├── components/
+│       │   ├── dashboard/            # KPI cards, charts, pipeline
+│       │   │   ├── KPICard.tsx
+│       │   │   ├── SalesChart.tsx
+│       │   │   ├── TopProductsTable.tsx
+│       │   │   ├── LowStockAlert.tsx
+│       │   │   └── POPipeline.tsx
+│       │   ├── buyer/                # Cart sidebar
+│       │   │   └── CartSidebar.tsx
+│       │   └── ProtectedRoute.tsx    # Role-based route guard
+│       ├── contexts/
+│       │   ├── AuthContext.tsx        # JWT auth state management
+│       │   └── CartContext.tsx        # Shopping cart with localStorage
+│       ├── layouts/
+│       │   ├── SupplierLayout.tsx     # Sidebar layout for supplier/staff
+│       │   └── BuyerLayout.tsx        # Top nav layout for buyers
+│       ├── pages/
+│       │   ├── auth/
+│       │   │   ├── Login.tsx
+│       │   │   └── Register.tsx
+│       │   ├── supplier/
+│       │   │   ├── Dashboard.tsx      # KPIs, charts, AI widget
+│       │   │   ├── Orders.tsx         # Order management
+│       │   │   ├── Inventory.tsx      # Stock management
+│       │   │   ├── Products.tsx       # Product catalog
+│       │   │   ├── Factories.tsx      # Factory vendors
+│       │   │   ├── PurchaseOrders.tsx # PO management
+│       │   │   ├── Fulfillment.tsx    # Pack and ship queue
+│       │   │   └── AIChat.tsx         # Gemini AI assistant
+│       │   ├── buyer/
+│       │   │   ├── Shop.tsx           # Product storefront
+│       │   │   ├── ProductDetail.tsx  # SKU selector and cart
+│       │   │   ├── Checkout.tsx       # Order placement
+│       │   │   ├── OrderConfirmation.tsx
+│       │   │   └── MyOrders.tsx       # Order tracking
+│       │   └── Unauthorized.tsx
+│       ├── types/
+│       │   └── index.ts              # TypeScript interfaces
+│       └── App.tsx                   # Router and route definitions
+├── docs/
+│   └── screenshots/                  # App screenshots for README
+├── infra/                            # AWS Terraform (coming soon)
+├── docker-compose.yml                # Full stack Docker setup
+├── docker-compose.dev.yml            # Dev setup (PostgreSQL only)
+└── .env.example                      # Environment variables template
 ```
 
 ---
@@ -285,6 +360,8 @@ Run `python scripts/seed.py` from the `backend/` directory to populate the datab
 
 > The seed script generates 20 buyer accounts, 8 products with multiple color/size SKUs, 5 factory vendors, 30+ purchase orders, and 60+ days of order history — enough data to explore every feature immediately.
 
+> **AI Assistant** is available to the Supplier role only at `/ai-assistant`. Requires a valid `GEMINI_API_KEY` in `.env` — get a free key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
 ---
 
 ## API Documentation
@@ -309,6 +386,7 @@ All endpoints are versioned under `/api/v1/` and follow RESTful conventions. Aut
 | Purchase Orders | `/api/v1/purchase-orders` | PO lifecycle management |
 | Analytics | `/api/v1/analytics` | KPIs, revenue charts, top products |
 | Notifications | `/api/v1/notifications` | In-app notification feed |
+| AI Assistant | `/api/v1/ai` | Chat sessions, message history, Gemini Text-to-SQL |
 | Health | `/api/v1/health` | Liveness probe for load balancers |
 
 ---
@@ -324,6 +402,7 @@ Copy `.env.example` to `.env`. All variables with defaults work out of the box f
 | `ALGORITHM` | No | `HS256` | JWT signing algorithm |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `1440` | Access token lifetime (24 hours) |
 | `REDIS_URL` | No | *(unset)* | Redis connection string — Celery background tasks are disabled if unset |
+| `GEMINI_API_KEY` | No | *(empty)* | Google Gemini API key — AI Assistant is disabled if unset. Get one free from [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | `ALLOWED_ORIGINS` | No | `["http://localhost:3000"]` | CORS allowed origins |
 | `STRIPE_SECRET_KEY` | No | *(empty)* | Stripe secret key for payment processing |
 | `SENDGRID_API_KEY` | No | *(empty)* | SendGrid API key for transactional email |
@@ -359,7 +438,7 @@ The GitHub Actions CI pipeline runs both jobs on every push to any branch and on
 - [x] Supplier analytics dashboard — KPIs, revenue charts, top products, PO pipeline
 - [x] Buyer storefront — browsing, SKU selection, cart, checkout, order tracking
 - [x] Fulfillment queue — warehouse pack and ship workflow with courier integration
-- [ ] **RAG-based AI business intelligence assistant** *(in design)*
+- [x] **AI business intelligence assistant** — Text-to-SQL with Google Gemini, multi-turn memory, session history
 - [ ] AWS deployment with Terraform — ECS + RDS + S3 + CloudFront
 - [ ] Transactional email via SendGrid — order confirmations, status updates
 - [ ] WhatsApp order notifications via Twilio

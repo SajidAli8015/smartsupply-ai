@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
 
     from routers import (
         health, auth, products, inventory, factories,
-        purchase_orders, orders, analytics, notifications,
+        purchase_orders, orders, analytics, notifications, ai,
     )
     app.include_router(health.router, prefix=settings.API_V1_STR)
     app.include_router(auth.router, prefix=settings.API_V1_STR)
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(orders.fulfillment_router, prefix=settings.API_V1_STR)
     app.include_router(analytics.router, prefix=settings.API_V1_STR)
     app.include_router(notifications.router, prefix=settings.API_V1_STR)
+    app.include_router(ai.router, prefix=settings.API_V1_STR)
 
     return app
 

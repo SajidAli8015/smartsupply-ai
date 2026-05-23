@@ -17,6 +17,7 @@ import Products from './pages/supplier/Products'
 import Factories from './pages/supplier/Factories'
 import PurchaseOrders from './pages/supplier/PurchaseOrders'
 import Fulfillment from './pages/supplier/Fulfillment'
+import AIChat from './pages/supplier/AIChat'
 
 import Shop from './pages/buyer/Shop'
 import ProductDetail from './pages/buyer/ProductDetail'
@@ -54,6 +55,13 @@ export default function App() {
               <Route path="/factories" element={<Factories />} />
               <Route path="/purchase-orders" element={<PurchaseOrders />} />
               <Route path="/fulfillment" element={<Fulfillment />} />
+            </Route>
+          </Route>
+
+          {/* AI Assistant — supplier only */}
+          <Route element={<ProtectedRoute allowedRoles={['supplier']} />}>
+            <Route element={<SupplierLayout />}>
+              <Route path="/ai-assistant" element={<AIChat />} />
             </Route>
           </Route>
 

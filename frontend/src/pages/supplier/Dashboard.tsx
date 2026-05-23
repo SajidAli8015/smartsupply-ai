@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { DollarSign, ShoppingCart, Boxes, TrendingUp, RefreshCw } from 'lucide-react'
+import { DollarSign, ShoppingCart, Boxes, TrendingUp, RefreshCw, Sparkles } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getKPIs, getRecentOrders, type KPIPeriod } from '../../api/analytics'
 import KPICard, { KPICardSkeleton } from '../../components/dashboard/KPICard'
@@ -23,8 +24,15 @@ const TODAY = new Date().toLocaleDateString('en-US', {
   day: 'numeric',
 })
 
+const AI_CHIPS = [
+  'Which products should I reorder?',
+  'What was my revenue this month?',
+  'Which orders are unshipped?',
+]
+
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [period, setPeriod] = useState<KPIPeriod>('month')
 
   const {
@@ -148,6 +156,38 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <LowStockAlert />
         <POPipeline />
+      </div>
+
+      {/* ── AI Assistant Widget ────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <Sparkles size={16} className="text-indigo-500" />
+              <h2 className="text-sm font-semibold text-slate-800">Ask AI Assistant</h2>
+            </div>
+            <p className="text-xs text-slate-500">
+              Get instant answers from your live business data — inventory, orders, revenue and more.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/ai-assistant')}
+            className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+          >
+            Open AI Assistant
+          </button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {AI_CHIPS.map((q) => (
+            <button
+              key={q}
+              onClick={() => navigate('/ai-assistant')}
+              className="rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs text-indigo-600 shadow-sm transition-colors hover:bg-indigo-100"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Recent Orders ─────────────────────────────────────────────────── */}

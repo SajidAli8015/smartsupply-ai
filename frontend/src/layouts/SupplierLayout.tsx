@@ -9,6 +9,7 @@ import {
   Factory,
   ClipboardList,
   Truck,
+  Sparkles,
   Bell,
   ChevronDown,
   LogOut,
@@ -28,6 +29,8 @@ const navItems = [
   { to: '/purchase-orders', icon: ClipboardList, label: 'Purchase Orders' },
   { to: '/fulfillment', icon: Truck, label: 'Fulfillment' },
 ]
+
+const aiNavItem = { to: '/ai-assistant', icon: Sparkles, label: 'AI Assistant' }
 
 export default function SupplierLayout() {
   const { user, logout } = useAuth()
@@ -90,6 +93,24 @@ export default function SupplierLayout() {
               {label}
             </NavLink>
           ))}
+
+          {/* AI Assistant — visually separated */}
+          <div className="mt-3 border-t border-slate-700 pt-3">
+            <NavLink
+              to={aiNavItem.to}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-indigo-300 hover:bg-slate-700 hover:text-indigo-200'
+                }`
+              }
+            >
+              <aiNavItem.icon size={18} />
+              {aiNavItem.label}
+            </NavLink>
+          </div>
         </nav>
 
         {/* User footer */}
